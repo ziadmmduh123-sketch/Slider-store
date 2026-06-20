@@ -2,139 +2,353 @@
 <html lang="ar">
 <head>
 <meta charset="UTF-8">
-<title>SLIDER STORE</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نظام إدارة ومحاسبة الموديلات - Slider Store</title>
 
 <style>
-body{
-  margin:0;
-  font-family: Arial;
+:root {
+  --bg-color: #0f172a;
+  --card-bg: #1e293b;
+  --text-color: #f8fafc;
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+  --accent: #a78bfa;
+  --danger: #ef4444;
+  --success: #10b981;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   direction: rtl;
-  background: linear-gradient(135deg,#0f172a,#1e1b4b);
-  color:white;
+  background: var(--bg-color);
+  color: var(--text-color);
+  margin: 0;
+  padding: 10px;
 }
 
-.container{
-  max-width:900px;
-  margin:auto;
-  padding:20px;
+.container {
+  max-width: 1100px;
+  margin: auto;
 }
 
-h1{
-  text-align:center;
-  color:#a78bfa;
-  margin-bottom:20px;
+h2 {
+  text-align: center;
+  color: var(--accent);
+  margin-bottom: 20px;
 }
 
-.card{
-  background: rgba(255,255,255,0.05);
-  padding:15px;
-  margin:10px 0;
-  border-radius:15px;
-  backdrop-filter: blur(10px);
-  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+/* شبكة المدخلات */
+.form-grid {
+  background: var(--card-bg);
+  padding: 20px;
+  border-radius: 12px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 25px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
-input{
-  width:100%;
-  padding:12px;
-  margin:6px 0;
-  border-radius:10px;
-  border:none;
-  outline:none;
+.form-group {
+  display: flex;
+  flex-direction: column;
 }
 
-button{
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background: linear-gradient(90deg,#6366f1,#a855f7);
-  color:white;
-  cursor:pointer;
-  font-weight:bold;
+label {
+  font-size: 13px;
+  color: #94a3b8;
+  margin-bottom: 5px;
 }
 
-.product{
-  background: rgba(255,255,255,0.07);
-  padding:12px;
-  margin:10px 0;
-  border-radius:12px;
+input, select {
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: white;
+  font-size: 14px;
 }
 
-.small{
-  opacity:0.8;
-  font-size:14px;
+input:focus, select:focus {
+  outline: 2px solid var(--primary);
+}
+
+.btn-container {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+button {
+  flex: 1;
+  padding: 12px;
+  background: var(--primary);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.2s;
+}
+
+button:hover {
+  background: var(--primary-hover);
+}
+
+.btn-clear {
+  background: #475569;
+  max-width: 150px;
+}
+
+.btn-clear:hover {
+  background: #334155;
+}
+
+/* لوحة الإحصائيات الإجمالية */
+.summary-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.summary-card {
+  background: var(--card-bg);
+  padding: 15px;
+  border-radius: 10px;
+  text-align: center;
+  border-right: 4px solid var(--accent);
+}
+
+.summary-card.profit { border-right-color: var(--success); }
+.summary-card h3 { margin: 0; font-size: 14px; color: #94a3b8; }
+.summary-card p { margin: 10px 0 0 0; font-size: 24px; font-weight: bold; color: white; }
+
+/* الجدول المحاسبي */
+.table-container {
+  background: var(--card-bg);
+  border-radius: 12px;
+  overflow-x: auto;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: right;
+  min-width: 800px;
+}
+
+th, td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #334155;
+  font-size: 14px;
+}
+
+th {
+  background: #1e293b;
+  color: var(--accent);
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+}
+
+tr:hover {
+  background: #24334d;
+}
+
+.btn-delete {
+  background: transparent;
+  color: var(--danger);
+  border: 1px solid var(--danger);
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.btn-delete:hover {
+  background: var(--danger);
+  color: white;
+}
+
+@media (max-width: 600px) {
+  th, td { padding: 10px; font-size: 12px; }
 }
 </style>
 </head>
-
 <body>
 
 <div class="container">
 
-<h1>SLIDER STORE 💎</h1>
+  <h2>📊 نظام المحاسبة وجرد الموديلات الذكي</h2>
 
-<div class="card">
-  <input id="name" placeholder="اسم المنتج">
-  <input id="price" placeholder="سعر الجملة للكرتونة">
-  <button onclick="add()">إضافة المنتج</button>
-</div>
+  <!-- قسم المدخلات -->
+  <div class="form-grid">
+    <div class="form-group">
+      <label>كود الموديل</label>
+      <input type="text" id="modelCode" placeholder="مثال: #101">
+    </div>
+    <div class="form-group">
+      <label>اسم الموديل</label>
+      <input type="text" id="modelName" placeholder="مثال: عباءة صوف">
+    </div>
+    <div class="form-group">
+      <label>نوع الموديل</label>
+      <select id="modelType">
+        <option value="عباءة">عباءة</option>
+        <option value="كاجوال">كاجوال</option>
+        <option value="ملابس بيت">ملابس بيت</option>
+        <option value="أخرى">أخرى</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>سعر جملة الكرتونة (12 قطعة)</label>
+      <input type="number" id="cartonCost" placeholder="0.00">
+    </div>
+    <div class="btn-container">
+      <button onclick="addModel()">حساب وإضافة للجدول ➕</button>
+      <button class="btn-clear" onclick="clearAllData()">تفريغ الشيت 🧹</button>
+    </div>
+  </div>
 
-<div id="list"></div>
+  <!-- لوحة الإجماليات (Dashboard) -->
+  <div class="summary-cards">
+    <div class="summary-card">
+      <h3>إجمالي عدد الموديلات</h3>
+      <p id="totalModels">0</p>
+    </div>
+    <div class="summary-card">
+      <h3>إجمالي تكلفة كراتين الجملة</h3>
+      <p id="totalCartonCost">0.00 ج.م</p>
+    </div>
+    <div class="summary-card profit">
+      <h3>إجمالي الأرباح المتوقعة (لكل القطع)</h3>
+      <p id="totalEstimatedProfit" style="color: var(--success);">0.00 ج.م</p>
+    </div>
+  </div>
+
+  <!-- جدول البيانات (شيت الإكسيل) -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>كود الموديل</th>
+          <th>اسم الموديل</th>
+          <th>نوع الموديل</th>
+          <th>سعر الجملة (كرتونة)</th>
+          <th>جملة القطعة (÷12)</th>
+          <th>سعر البيع (ربح 40%)</th>
+          <th>هامش ربح القطعة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="inventoryTable">
+        <!-- البيانات هتنزل هنا تلقائي -->
+      </tbody>
+    </table>
+  </div>
 
 </div>
 
 <script>
+// تحميل البيانات من الذاكرة المحلية للموبايل
+let inventory = JSON.parse(localStorage.getItem("store_inventory") || "[]");
 
-let products = JSON.parse(localStorage.getItem("products") || "[]");
+function addModel() {
+  let code = document.getElementById("modelCode").value.trim();
+  let name = document.getElementById("modelName").value.trim();
+  let type = document.getElementById("modelType").value;
+  let cartonCost = parseFloat(document.getElementById("cartonCost").value);
 
-function save(){
-  localStorage.setItem("products", JSON.stringify(products));
+  // التأكد من إدخال البيانات الأساسية
+  if (!code || !name || isNaN(cartonCost) || cartonCost <= 0) {
+    alert("برجاء ملء جميع الخانات بشكل صحيح وكتابة سعر الجملة.");
+    return;
+  }
+
+  // تطبيق المعادلات الحسابية المحددة من العميل بالظبط
+  let pieceCost = cartonCost / 12; // سعر جملة القطعة
+  let sellPrice = pieceCost / (1 - 0.40); // سعر البيع بهامش ربح 40%
+  let profit = sellPrice - pieceCost; // هامش ربح القطعة الواحدة
+
+  // إنشاء كائن الموديل الجديد
+  let modelItem = {
+    code,
+    name,
+    type,
+    cartonCost,
+    pieceCost,
+    sellPrice,
+    profit
+  };
+
+  // حفظ في المصفوفة والذاكرة
+  inventory.push(modelItem);
+  localStorage.setItem("store_inventory", JSON.stringify(inventory));
+
+  // إعادة تعيين الخانات لتسهيل الكتابة ورا بعض
+  document.getElementById("modelCode").value = "";
+  document.getElementById("modelName").value = "";
+  document.getElementById("cartonCost").value = "";
+
+  // تحديث الشاشة
+  renderTable();
 }
 
-function add(){
-  let name = document.getElementById("name").value;
-  let price = parseFloat(document.getElementById("price").value);
-
-  if(!name || !price) return;
-
-  let piece = price / 12;
-  let sell = piece / 0.6;
-  let profit = sell - piece;
-
-  products.push({name, price, piece, sell, profit});
-  save();
-  render();
+function deleteModel(index) {
+  if(confirm("هل أنت متأكد من حذف هذا الموديل؟")) {
+    inventory.splice(index, 1);
+    localStorage.setItem("store_inventory", JSON.stringify(inventory));
+    renderTable();
+  }
 }
 
-function del(i){
-  products.splice(i,1);
-  save();
-  render();
+function clearAllData() {
+  if(confirm("تحذير: هل تريد مسح شيت المحاسبة بالكامل؟ لا يمكن استعادة البيانات.")) {
+    inventory = [];
+    localStorage.removeItem("store_inventory");
+    renderTable();
+  }
 }
 
-function render(){
-  let list = document.getElementById("list");
-  list.innerHTML = "";
+function renderTable() {
+  let tableBody = document.getElementById("inventoryTable");
+  tableBody.innerHTML = "";
 
-  products.forEach((p,i)=>{
-    list.innerHTML += `
-      <div class="product">
-        <b>${p.name}</b>
-        <div class="small">سعر الجملة: ${p.price}</div>
-        <div class="small">سعر القطعة: ${p.piece.toFixed(2)}</div>
-        <div class="small">سعر البيع: ${p.sell.toFixed(2)}</div>
-        <div class="small">الربح: ${p.profit.toFixed(2)}</div>
-        <button onclick="del(${i})" style="margin-top:8px;background:#ef4444">
-          حذف
-        </button>
-      </div>
+  let totalCartonsSum = 0;
+  let totalProfitSum = 0;
+
+  inventory.forEach((item, index) => {
+    totalCartonsSum += item.cartonCost;
+    // إجمالي ربح الكرتونة كاملة = ربح القطعة × 12
+    totalProfitSum += (item.profit * 12);
+
+    tableBody.innerHTML += `
+      <tr>
+        <td style="color: var(--accent); font-weight: bold;">${item.code}</td>
+        <td>${item.name}</td>
+        <td><span style="background: #334155; padding: 4px 8px; border-radius: 6px; font-size: 12px;">${item.type}</span></td>
+        <td>${item.cartonCost.toFixed(2)} ج.م</td>
+        <td>${item.pieceCost.toFixed(2)} ج.م</td>
+        <td style="color: #60a5fa; font-weight: bold;">${item.sellPrice.toFixed(2)} ج.م</td>
+        <td style="color: var(--success); font-weight: bold;">+${item.profit.toFixed(2)} ج.م</td>
+        <td>
+          <button class="btn-delete" onclick="deleteModel(${index})">حذف 🗑️</button>
+        </td>
+      </tr>
     `;
   });
+
+  // تحديث لوحة الإحصائيات الإجمالية للمحل
+  document.getElementById("totalModels").innerText = inventory.length;
+  document.getElementById("totalCartonCost").innerText = totalCartonsSum.toFixed(2) + " ج.م";
+  document.getElementById("totalEstimatedProfit").innerText = totalProfitSum.toFixed(2) + " ج.م";
 }
 
-render();
-
+// تشغيل الجدول فور فتح الصفحة وعرض البيانات المحفوظة
+renderTable();
 </script>
 
 </body>
