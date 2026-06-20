@@ -946,3 +946,128 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <!-- ========================================== -->
+<!-- ========================================== -->
+<!-- كود إضافي 7: اللمسات البصرية السوبر واو وتجميل الـ UI -->
+<!-- ========================================== -->
+
+<!-- استدعاء مكتبة الأيقونات العالمية FontAwesome في الخلفية -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+/* 1) تأثيرات حركية وتوهج للكروت والأزرار */
+.card, .addon-section {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease !important;
+  border-radius: 12px !important;
+  position: relative;
+  overflow: hidden;
+}
+.card:hover, .addon-section:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px rgba(99, 102, 241, 0.15) !important; /* توهج ناعم أزرق/بنفسجي */
+}
+
+/* حركة انسيابية للأزرار */
+button {
+  transition: all 0.2s ease-in-out !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px; /* مسافة بين الأيقونة والكلام */
+}
+button:active {
+  transform: scale(0.96);
+}
+
+/* 2) تأثير النقطة المضيئة اللامعة للنظام */
+.system-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(16, 185, 129, 0.1);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #10b981;
+  font-weight: 500;
+  margin-top: 5px;
+}
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+  animation: statusPulse 1.6s infinite;
+}
+
+@keyframes statusPulse {
+  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* 3) خطوط فصل متدرجة شيك */
+.premium-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, #4f46e5, #3b82f6, transparent);
+  margin: 25px 0;
+  opacity: 0.4;
+}
+</style>
+
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  // 1) إضافة مؤشر الحالة الأخضر تحت الهيدر أو اللوجو تلقائياً
+  let header = document.querySelector("header") || document.querySelector(".header") || document.body;
+  if (header) {
+    let statusHtml = `
+      <div style="text-align: center; margin-bottom: 15px;">
+        <div class="system-status">
+          <div class="pulse-dot"></div>
+          <span>نظام Slider Store متصل ونشط ومؤمن محلياً 🔐</span>
+        </div>
+      </div>
+    `;
+    // زرع المؤشر في أول الصفحة تحت العنوان
+    let titleElement = header.querySelector("h1") || header.firstChild;
+    if(titleElement) {
+      titleElement.insertAdjacentHTML('afterend', statusHtml);
+    }
+  }
+
+  // 2) زرع الأيقونات الذكية داخل الأزرار عشان تخلي الديزاين Super Wow
+  setTimeout(() => {
+    // زرار الإكسيل الأخضر
+    let excelBtn = document.querySelector("button[onclick*='export'], button[style*='#22c55e']");
+    if(excelBtn && !excelBtn.querySelector(".fa-file-excel")) {
+      excelBtn.innerHTML = `<i class="fa-solid fa-file-excel"></i> ` + excelBtn.innerHTML.replace("🟢", "").replace("📊", "");
+    }
+
+    // زرار الطباعة ورق
+    let printBtn = document.querySelector("button[onclick*='print']");
+    if(printBtn && !printBtn.querySelector(".fa-print")) {
+      printBtn.innerHTML = `<i class="fa-solid fa-print"></i> ` + printBtn.innerHTML.replace("🖨️", "");
+    }
+
+    // زرار استرجاع البيانات الأزرق
+    let importBtn = document.querySelector(".btn-import");
+    if(importBtn && !importBtn.querySelector(".fa-cloud-arrow-up")) {
+      importBtn.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> ` + importBtn.innerHTML.replace("⬆️", "").replace("🔄", "");
+    }
+
+    // زرار بيع الكاشير
+    let sellBtn = document.querySelector("button[onclick*='sell'], button[onclick*='Sale']");
+    if(sellBtn && !sellBtn.querySelector(".fa-cash-register")) {
+      sellBtn.innerHTML = `<i class="fa-solid fa-cash-register"></i> ` + sellBtn.innerHTML.replace("💵", "");
+    }
+    
+    // زرار الحساب والإضافة
+    let addBtn = document.querySelector("button[type='submit'], button[onclick*='add']");
+    if(addBtn && !addBtn.querySelector(".fa-plus")) {
+      addBtn.innerHTML = `<i class="fa-solid fa-plus"></i> ` + addBtn.innerHTML.replace("➕", "");
+    }
+  }, 800);
+});
+</script>
+<!-- ========================================== -->
