@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+<meta charset="UTF-8">
+<title>SLIDER STORE</title>
+
+<style>
+body{
+  margin:0;
+  font-family: Arial;
+  direction: rtl;
+  background: linear-gradient(135deg,#0f172a,#1e1b4b);
+  color:white;
+}
+
+.container{
+  max-width:900px;
+  margin:auto;
+  padding:20px;
+}
+
+h1{
+  text-align:center;
+  color:#a78bfa;
+  margin-bottom:20px;
+}
+
+.card{
+  background: rgba(255,255,255,0.05);
+  padding:15px;
+  margin:10px 0;
+  border-radius:15px;
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+}
+
+input{
+  width:100%;
+  padding:12px;
+  margin:6px 0;
+  border-radius:10px;
+  border:none;
+  outline:none;
+}
+
+button{
+  width:100%;
+  padding:12px;
+  border:none;
+  border-radius:10px;
+  background: linear-gradient(90deg,#6366f1,#a855f7);
+  color:white;
+  cursor:pointer;
+  font-weight:bold;
+}
+
+.product{
+  background: rgba(255,255,255,0.07);
+  padding:12px;
+  margin:10px 0;
+  border-radius:12px;
+}
+
+.small{
+  opacity:0.8;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+<h1>SLIDER STORE 💎</h1>
+
+<div class="card">
+  <input id="name" placeholder="اسم المنتج">
+  <input id="price" placeholder="سعر الجملة للكرتونة">
+  <button onclick="add()">إضافة المنتج</button>
+</div>
+
+<div id="list"></div>
+
+</div>
+
+<script>
+
+let products = JSON.parse(localStorage.getItem("products") || "[]");
+
+function save(){
+  localStorage.setItem("products", JSON.stringify(products));
+}
+
+function add(){
+  let name = document.getElementById("name").value;
+  let price = parseFloat(document.getElementById("price").value);
+
+  if(!name || !price) return;
+
+  let piece = price / 12;
+  let sell = piece / 0.6;
+  let profit = sell - piece;
+
+  products.push({name, price, piece, sell, profit});
+  save();
+  render();
+}
+
+function del(i){
+  products.splice(i,1);
+  save();
+  render();
+}
+
+function render(){
+  let list = document.getElementById("list");
+  list.innerHTML = "";
+
+  products.forEach((p,i)=>{
+    list.innerHTML += `
+      <div class="product">
+        <b>${p.name}</b>
+        <div class="small">سعر الجملة: ${p.price}</div>
+        <div class="small">سعر القطعة: ${p.piece.toFixed(2)}</div>
+        <div class="small">سعر البيع: ${p.sell.toFixed(2)}</div>
+        <div class="small">الربح: ${p.profit.toFixed(2)}</div>
+        <button onclick="del(${i})" style="margin-top:8px;background:#ef4444">
+          حذف
+        </button>
+      </div>
+    `;
+  });
+}
+
+render();
+
+</script>
+
+</body>
+</html>
