@@ -1071,3 +1071,79 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 </script>
 <!-- ========================================== -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+<style>
+  /* إضافة زرار التعديل الأصفر */
+  .btn-edit { background: #eab308; color: #0f172a; border: none; padding: 5px 10px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 12px; margin-left: 5px; }
+  .btn-edit:hover { background: #ca8a04; }
+  /* حركات الكروت */
+  .summary-card, .addon-section, .pos-section { transition: transform 0.2s, box-shadow 0.2s; }
+  .summary-card:hover, .addon-section:hover, .pos-section:hover { transform: translateY(-3px); box-shadow: 0 8px 16px rgba(99, 102, 241, 0.15); }
+</style>
+
+<script>
+// تمديد دالة الـ Render الأصلية بتاعتك عشان تضيف الميزات الجديدة تلقائياً
+if (typeof renderTable === 'function') {
+  const originalRender = renderTable;
+  renderTable = function() {
+    originalRender(); // تشغيل كودك الأصلي بالملّي الأول
+    
+    // 1) زرع زرار التعديل جنب زرار الحذف في الجدول
+    let rows = document.querySelectorAll("#inventoryTable tr");
+    rows.forEach((row, index) => {
+      if (!row.querySelector(".btn-edit") && inventory[index]) {
+        let actionsCell = row.cells[row.cells.length - 1];
+        let editBtn = document.createElement("button");
+        editBtn.className = "btn-edit";
+        editBtn.innerHTML = "<i class='fa-solid fa-pen'></i> تعديل";
+        editBtn.onclick = function() { openQuickEdit(index); };
+        actionsCell.insertBefore(editBtn, actionsCell.firstChild);
+      }
+    });
+
+    // 2) تحديث كارت أعلى ربح تلقائياً
+    let topCard = document.getElementById("totalModels") ? document.getElementById("totalModels").parentElement : null;
+    if (topCard && inventory.length > 0) {
+      let sorted = [...inventory].sort((a, b) => b.profit - a.profit);
+      let topProduct = sorted[0];
+      let displayBox = document.getElementById("quickTopProfit");
+      if (!displayBox) {
+        topCard.insertAdjacentHTML('afterend', `
+          <div class="summary-card" id="quickTopProfit" style="border-right-color: #f59e0b; background: linear-gradient(135deg, #1e293b 0%, #2e1d42 100%);">
+            <h3>🔥 أعلى موديل ربحاً (القطعة)</h3>
+            <p style="font-size: 16px; color: #a78bfa; margin-top: 10px;">${topProduct.name}<br><span style="color:#10b981;">+${topProduct.profit.toFixed(2)} ج</span></p>
+          </div>
+        `);
+      } else {
+        displayBox.querySelector("p").innerHTML = `${topProduct.name}<br><span style="color:#10b981;">+${topProduct.profit.toFixed(2)} ج</span>`;
+      }
+    }
+  };
+}
+
+// دالة التعديل اللي بتعيد الحسابات بناءً على معادلة الـ 40% بتاعتك
+function openQuickEdit(index) {
+  let item = inventory[index];
+  let newName = prompt("تعديل اسم الموديل:", item.name);
+  if (newName === null) return;
+  let newCost = prompt("تعديل سعر جملة الكرتونة:", item.cartonCost);
+  if (newCost === null) return;
+  newCost = parseFloat(newCost);
+  if (isNaN(newCost) || newCost <= 0) return alert("سعر غير صحيح!");
+
+  // تطبيق معادلاتك بالملّي
+  inventory[index].name = newName;
+  inventory[index].cartonCost = newCost;
+  inventory[index].pieceCost = newCost / 12;
+  inventory[index].sellPrice = (newCost / 12) / (1 - 0.40);
+  inventory[index].profit = inventory[index].sellPrice - inventory[index].pieceCost;
+
+  localStorage.setItem("store_inventory", JSON.stringify(inventory));
+  renderTable(); // إعادة تشغيل الجدول والكاشير تلقائياً
+  alert("تم التعديل وحفظ الحسابات الجديدة!");
+}
+
+// تشغيل أول مرة
+setTimeout(() => { if(typeof renderTable === 'function') renderTable(); }, 500);
+</script>
