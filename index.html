@@ -353,3 +353,350 @@ renderTable();
 
 </body>
 </html>
+<style>
+/* تحسينات إضافية للشكل بدون التأثير على القديم */
+.addon-section {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 25px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+.search-box {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 15px;
+  border-radius: 8px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: white;
+  box-sizing: border-box;
+}
+.btn-print {
+  background: #10b981;
+  margin-top: 15px;
+}
+.btn-print:hover {
+  background: #059669;
+}
+</style>
+
+<div class="container">
+  <div class="addon-section">
+    <h3 style="color: #a78bfa; margin-top: 0;">🔍 محرك البحث السريع وطباعة التقارير</h3>
+    <input type="text" id="searchBar" class="search-box" onkeyup="searchModels()" placeholder="ابحث بكود الموديل أو اسم الشبشب...">
+    <button class="btn-print" onclick="printInventory()">طباعة تقرير الجرد الحالي (PDF) 🖨️</button>
+  </div>
+</div>
+
+<script>
+// 1. إضافة خانات المقاسات والألوان تلقائياً في قائمة "نوع الموديل" عشان تناسب محل الشباشب
+window.addEventListener('DOMContentLoaded', (event) => {
+  let typeSelect = document.getElementById("modelType");
+  if(typeSelect) {
+    typeSelect.innerHTML = `
+      <option value="شبشب رجالي">شبشب رجالي</option>
+      <option value="شبشب حريمي">شبشب حريمي</option>
+      <option value="شبشب أطفال">شبشب أطفال</option>
+      <option value="كوتشي / صندل">كوتشي / صندل</option>
+    `;
+  }
+  
+  // تعديل الـ Placeholders عشان تناسب الشباشب
+  document.getElementById("modelCode").placeholder = "مثال: Sh-2026";
+  document.getElementById("modelName").placeholder = "مثال: شبشب جلد طبيعي فل";
+});
+
+// 2. وظيفة البحث الذكي في الجدول
+function searchModels() {
+  let filter = document.getElementById("searchBar").value.toUpperCase();
+  let rows = document.querySelectorAll("#inventoryTable tr");
+
+  rows.forEach(row => {
+    let codeText = row.cells[0] ? row.cells[0].textContent || row.cells[0].innerText : "";
+    let nameText = row.cells[1] ? row.cells[1].textContent || row.cells[1].innerText : "";
+    
+    if (codeText.toUpperCase().indexOf(filter) > -1 || nameText.toUpperCase().indexOf(filter) > -1) {
+      row.style.display = "";
+    } else {
+      row.style.display = "none";
+    }
+  });
+}
+
+// 3. وظيفة طباعة الشيت كتقرير رسمي للمحل
+function printInventory() {
+  let printContents = document.querySelector(".table-container").innerHTML;
+  let summaryContents = document.querySelector(".summary-cards").innerHTML;
+  let originalContents = document.body.innerHTML;
+
+  document.body.innerHTML = `
+    <div style="direction: rtl; font-family: Arial; padding: 20px; color: black; background: white;">
+      <h1 style="text-align: center; color: #1e293b;">تقرير جرد وأسعار محل Slider Store</h1>
+      <hr>
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; text-align: center;">
+        ${summaryContents}
+      </div>
+      ${printContents}
+    </div>
+  `;
+  
+  // إخفاء عمود الحذف أثناء الطباعة ليكون التقرير نظيفاً
+  let deleteButtons = document.querySelectorAll(".btn-delete");
+  deleteButtons.forEach(btn => btn.style.display = "none");
+
+  window.print();
+  
+  // إعادة الصفحة لأصلها بعد الطباعة
+  document.body.innerHTML = originalContents;
+  window.location.reload(); // إعادة إنعاش الصفحة لترجع الأكواد تعمل بكفاءة
+}
+</script>
+<style>
+.pos-section {
+  background: #1e293b;
+  padding: 20px;
+  border-radius: 12px;
+  margin-top: 25px;
+  border: 1px solid #334155;
+}
+.pos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-top: 15px;
+}
+.sales-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 15px;
+  background: #0f172a;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.sales-table th {
+  background: #475569;
+  color: #38bdf8;
+}
+.badge-profit {
+  background: #065f46;
+  color: #34d399;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+</style>
+
+<div class="container">
+  <div class="pos-section">
+    <h3 style="color: #38bdf8; margin-top: 0; display: flex; align-items: center; gap: 8px;">
+      🛒 شاشة الكاشير وتسجيل المبيعات اليومية
+    </h3>
+    <p style="font-size: 13px; color: #94a3b8; margin: 0;">اختر الموديل واكتب الكمية المباعة لتسجيل الفاتورة وحساب الأرباح الفعلية في درج الكاشير.</p>
+    
+    <div class="pos-grid">
+      <div class="form-group">
+        <label>اختر الموديل المباع</label>
+        <select id="posModelSelect">
+          <option value="">-- اختر الشبشب --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>الكمية المباعة (بالقطعة)</label>
+        <input type="number" id="posQty" value="1" min="1">
+      </div>
+      <div class="form-group" style="justify-content: flex-end;">
+        <button onclick="sellItem()" style="background: #38bdf8; color: #0f172a;">تسجيل عملية بيع 💵</button>
+      </div>
+    </div>
+
+    <div class="summary-cards" style="margin-top: 20px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));">
+      <div class="summary-card" style="border-right-color: #38bdf8;">
+        <h3 style="font-size: 12px;">إجمالي إيراد المبيعات (الكاش الوارد)</h3>
+        <p id="totalSalesCash" style="font-size: 20px; color: #38bdf8;">0.00 ج.م</p>
+      </div>
+      <div class="summary-card" style="border-right-color: #10b981;">
+        <h3 style="font-size: 12px;">صافي الأرباح المحققة في الدرج</h3>
+        <p id="actualProfitCash" style="font-size: 20px; color: #10b981;">0.00 ج.م</p>
+      </div>
+    </div>
+
+    <h4 style="margin-bottom: 5px; color: #94a3b8;">📋 سجل الفواتير والمبيعات الأخيرة:</h4>
+    <div style="overflow-x: auto;">
+      <table class="sales-table">
+        <thead>
+          <tr>
+            <th>الوقت</th>
+            <th>الموديل</th>
+            <th>الكمية</th>
+            <th>إجمالي الفاتورة</th>
+            <th>الربح الفعلي</th>
+          </tr>
+        </thead>
+        <tbody id="salesLogTable">
+          </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// مخزن المبيعات في الذاكرة
+let salesLog = JSON.parse(localStorage.getItem("store_sales_log") || "[]");
+
+// تحديث قائمة الموديلات في شاشة الكاشير تلقائياً
+function updatePosDropdown() {
+  let select = document.getElementById("posModelSelect");
+  if(!select) return;
+  
+  // تصفير القائمة ما عدا الخيار الأول
+  select.innerHTML = '<option value="">-- اختر الشبشب --</option>';
+  
+  inventory.forEach((item, index) => {
+    let option = document.createElement("option");
+    option.value = index;
+    option.text = `[${item.code}] ${item.name} - بيع: ${item.sellPrice.toFixed(2)} ج.م`;
+    select.add(option);
+  });
+}
+
+// تشغيل التحديث مع كل عملية إضافة أو مسح للموديلات
+let originalRenderTable = renderTable;
+renderTable = function() {
+  originalRenderTable();
+  updatePosDropdown();
+  renderSales();
+};
+
+// تسجيل عملية بيع
+function sellItem() {
+  let modelIndex = document.getElementById("posModelSelect").value;
+  let qty = parseInt(document.getElementById("posQty").value);
+
+  if(modelIndex === "" || isNaN(qty) || qty <= 0) {
+    alert("برجاء اختيار الموديل وتحديد كمية صحيحة.");
+    return;
+  }
+
+  let selectedItem = inventory[modelIndex];
+  let totalInvoice = selectedItem.sellPrice * qty;
+  let totalProfit = selectedItem.profit * qty;
+  
+  let now = new Date();
+  let timeStr = now.getHours() + ":" + String(now.getMinutes()).padStart(2, '0');
+
+  let saleRecord = {
+    time: timeStr,
+    name: selectedItem.name,
+    code: selectedItem.code,
+    qty: qty,
+    totalPrice: totalInvoice,
+    totalProfit: totalProfit
+  };
+
+  salesLog.unshift(saleRecord); // إضافة في أول القائمة
+  localStorage.setItem("store_sales_log", JSON.stringify(salesLog));
+  
+  // إعادة تعيين الكمية
+  document.getElementById("posQty").value = "1";
+  document.getElementById("posModelSelect").value = "";
+
+  renderSales();
+}
+
+// عرض المبيعات وحساب فلوس الدرج
+function renderSales() {
+  let tableBody = document.getElementById("salesLogTable");
+  if(!tableBody) return;
+  
+  tableBody.innerHTML = "";
+  let totalCash = 0;
+  let actualProfit = 0;
+
+  salesLog.forEach(sale => {
+    totalCash += sale.totalPrice;
+    actualProfit += sale.totalProfit;
+
+    tableBody.innerHTML += `
+      <tr>
+        <td style="color: #64748b; font-size: 12px;">${sale.time}</td>
+        <td><b>[${sale.code}]</b> ${sale.name}</td>
+        <td>${sale.qty} قطعة</td>
+        <td style="color: #38bdf8; font-weight: bold;">${sale.totalPrice.toFixed(2)} ج.م</td>
+        <td><span class="badge-profit">+${sale.totalProfit.toFixed(2)} ج.م</span></td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("totalSalesCash").innerText = totalCash.toFixed(2) + " ج.م";
+  document.getElementById("actualProfitCash").innerText = actualProfit.toFixed(2) + " ج.م";
+}
+
+// تصفير المبيعات مع تصفير الشيت بالكامل
+let originalClearAllData = clearAllData;
+clearAllData = function() {
+  if(confirm("هل تريد مسح سجل المبيعات والدرج أيضاً مع تفريغ الشيت؟")) {
+    salesLog = [];
+    localStorage.removeItem("store_sales_log");
+  }
+  originalClearAllData();
+};
+
+// تفعيل الكاشير فوراً عند التحميل
+updatePosDropdown();
+renderSales();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+<style>
+.btn-excel {
+  background: #15803d; /* لون الإكسيل الأخضر الشهير */
+  margin-top: 15px;
+}
+.btn-excel:hover {
+  background: #166534;
+}
+</style>
+
+<div class="container">
+  <div class="addon-section" style="background: #111827; border: 1px dashed #22c55e;">
+    <h3 style="color: #22c55e; margin-top: 0;">💾 النسخ الاحتياطي والأرشفة</h3>
+    <p style="font-size: 13px; color: #94a3b8; margin: 0;">تقدر بضغطة واحدة تنزل كل بضاعة المحل وأسعارها في ملف Excel حقيقي عشان تفتحه من الموبايل أو اللاب توب في أي وقت.</p>
+    <button class="btn-excel" onclick="exportToExcel()">تصدير البيانات لملف Excel مباشر 🟢</button>
+  </div>
+</div>
+
+<script>
+function exportToExcel() {
+  if (inventory.length === 0) {
+    alert("الشيت فاضي! ضيف موديلات الأول عشان تقدر تصدرها لإكسيل.");
+    return;
+  }
+
+  // تجهيز البيانات بشكل مصفوفة منظمة للإكسيل
+  let excelData = inventory.map(item => {
+    return {
+      "كود الموديل": item.code,
+      "اسم الموديل": item.name,
+      "نوع الموديل": item.type,
+      "سعر جملة الكرتونة": item.cartonCost,
+      "جملة القطعة الواحدة": item.pieceCost,
+      "سعر البيع المقترح": item.sellPrice,
+      "هامش ربح القطعة": item.profit,
+      "إجمالي ربح الكرتونة (12 قطعة)": item.profit * 12
+    };
+  });
+
+  // إنشاء شيت إكسيل جديد
+  let wb = XLSX.utils.book_new();
+  let ws = XLSX.utils.json_to_sheet(excelData);
+
+  // ضبط اتجاه الشيت ليكون من اليمين لليسار عشان العربي
+  ws['!dir'] = "rtl";
+
+  // إضافة الشيت لكتاب العمل
+  XLSX.utils.book_append_sheet(wb, ws, "جرد الموديلات والأسعار");
+
+  // تحميل الملف تلقائياً على جهاز العميل
+  XLSX.writeFile(wb, "تقرير_محاسبة_Slider_Store.xlsx");
+}
+</script>
