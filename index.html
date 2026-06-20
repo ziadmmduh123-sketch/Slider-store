@@ -1147,3 +1147,325 @@ function openQuickEdit(index) {
 // تشغيل أول مرة
 setTimeout(() => { if(typeof renderTable === 'function') renderTable(); }, 500);
 </script>
+<!-- ======================================================= -->
+<!-- نظام التطوير الشامل: تعويم الكاشير، إدارة المخزن، والتكاليف الثابتة -->
+<!-- ======================================================= -->
+<style>
+  /* تصميم قسم التكاليف الثابتة الجديد */
+  .fixed-costs-section {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    margin-top: 25px;
+    border: 1px solid #ef4444;
+  }
+  .costs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+  }
+  .editable-price {
+    background: #1e293b !important;
+    border: 1px solid #38bdf8 !important;
+    color: #38bdf8 !important;
+    font-weight: bold;
+  }
+  .stock-badge {
+    background: #1e293b;
+    padding: 2px 6px;
+    border-radius: 4px;
+    border: 1px solid #6366f1;
+    font-size: 12px;
+  }
+</style>
+
+<!-- واجهة قسم التكاليف الثابتة -->
+<div class="container">
+  <div class="fixed-costs-section">
+    <h3 style="color: #ef4444; margin-top: 0; display: flex; align-items: center; gap: 8px;">
+      <i class="fa-solid fa-file-invoice-dollar"></i> قسم إدارة التكاليف الثابتة والمصاريف
+    </h3>
+    <p style="font-size: 13px; color: #94a3b8; margin: 0;">سجل مصاريف المحل (الإيجار، المرتبات، الفواتير) ليتم خفضها تلقائياً من صافي أرباح الدرج.</p>
+    
+    <div class="costs-grid">
+      <div class="form-group">
+        <label>نوع المصروف</label>
+        <input type="text" id="costTitle" placeholder="مثال: إيجار المحل">
+      </div>
+      <div class="form-group">
+        <label>المبلغ (ج.م)</label>
+        <input type="number" id="costAmount" placeholder="0.00">
+      </div>
+      <div class="form-group" style="justify-content: flex-end;">
+        <button onclick="addFixedCost()" style="background: #ef4444;"><i class="fa-solid fa-minus"></i> تسجيل مصروف</button>
+      </div>
+    </div>
+
+    <div style="overflow-x: auto; margin-top: 15px;">
+      <table class="sales-table" style="background: #0f172a;">
+        <thead>
+          <tr>
+            <th>المصروف</th>
+            <th>المبلغ</th>
+            <th>إجراء</th>
+          </tr>
+        </thead>
+        <tbody id="costsLogTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+// مخازن البيانات الجديدة في الذاكرة
+let fixedCosts = JSON.parse(localStorage.getItem("store_fixed_costs") || "[]");
+
+// 1) تعديل واجهة المخزن والكاشير لتشمل "التعويم" وإضافة عمود "المخزون" لجدول العميل الأصلي
+window.addEventListener('DOMContentLoaded', () => {
+  // إضافة عمود المخزون في الجدول الأساسي للعميل من فوق
+  let tableHeader = document.querySelector("table grievancesHeader, table thead tr");
+  if (tableHeader && !tableHeader.innerHTML.includes("المخزون المتاح")) {
+    let th = document.createElement("th");
+    th.innerText = "المخزون (قطعة)";
+    tableHeader.insertBefore(th, tableHeader.cells[4]); // وضعه بعد نوع الموديل
+  }
+
+  // تحويل خانة الكمية المباعة في الكاشير لتصبح "سعر البيع الفعلي (تعويم)"
+  let posGrid = document.querySelector(".pos-grid");
+  if (posGrid && !document.getElementById("posActualPrice")) {
+    let priceGroup = document.createElement("div");
+    priceGroup.className = "form-group";
+    priceGroup.innerHTML = `
+      <label style="color:#38bdf8;">سعر البيع الفعلي (عدله براحتك)</label>
+      <input type="number" id="posActualPrice" class="editable-price" placeholder="0.00">
+    `;
+    posGrid.insertBefore(priceGroup, posGrid.children[1]);
+  }
+
+  // تغيير لوحة الإحصائيات لإضافة كارت "صافي أرباحك الحقيقية في جيبك"
+  let summaryCards = document.querySelector(".summary-cards");
+  if (summaryCards && !document.getElementById("netProfitCard")) {
+    summaryCards.insertAdjacentHTML('beforeend', `
+      <div class="summary-card" id="netProfitCard" style="border-right-color: #f43f5e; background: linear-gradient(135deg, #1e293b 0%, #4c1d24 100%);">
+        <h3>💰 صافي ربح المحل الفعلي (بعد المصاريف)</h3>
+        <p id="netProfitCash" style="color: #f43f5e;">0.00 ج.م</p>
+      </div>
+    `);
+  }
+
+  // ربط اختيار الموديل في الكاشير بملء السعر الفعلي تلقائياً ولكنه قابل للتغيير
+  let modelSelect = document.getElementById("posModelSelect");
+  if (modelSelect) {
+    modelSelect.addEventListener("change", function() {
+      let idx = this.value;
+      if (idx !== "" && inventory[idx]) {
+        document.getElementById("posActualPrice").value = inventory[idx].sellPrice.toFixed(2);
+      } else {
+        document.getElementById("posActualPrice").value = "";
+      }
+    });
+  }
+
+  // تمديد دالة تفريغ الشيت الأصلية لتمسح المصاريف والمخزون أيضاً
+  if (typeof clearAllData === 'function') {
+    let originalClear = clearAllData;
+    clearAllData = function() {
+      if (confirm("هل تريد تصفير قسم المصاريف التكاليف الثابتة أيضاً؟")) {
+        fixedCosts = [];
+        localStorage.removeItem("store_fixed_costs");
+      }
+      originalClear();
+    };
+  }
+
+  renderTable(); // إنعاش أولي للبيانات
+});
+
+// 2) إعادة صياغة الـ Render الأصلي ليعرض المخزون، والمصاريف، والأرباح العائمة بالملي
+if (typeof renderTable === 'function') {
+  let originalRender = renderTable;
+  renderTable = function() {
+    originalRender(); // تشغيل الأكواد الحسابية القديمة أولاً
+    
+    // حقن قيم المخزون الافتراضية لو مش موجودة (هنعتبر الكرتونة فيها 12 قطعة مخزون عند الإضافة)
+    let rows = document.querySelectorAll("#inventoryTable tr");
+    rows.forEach((row, index) => {
+      if (inventory[index]) {
+        if (inventory[index].stock === undefined) {
+          inventory[index].stock = 12; // مخزون افتراضي للكرتونة الأولى
+        }
+        
+        // زرع خانة المخزن في السطر قبل سعر الجملة
+        if (row.cells.length < 9) { 
+          let td = document.createElement("td");
+          td.innerHTML = `<span class="stock-badge" id="stock-view-${index}">${inventory[index].stock} قطعة</span> <button onclick="addStockManual(${index})" style="padding:2px 6px; font-size:10px; background:#6366f1; width:auto; display:inline-block;">+12</button>`;
+          row.insertBefore(td, row.cells[4]);
+        }
+      }
+    });
+
+    // حساب التكاليف وصافي الأرباح العائمة
+    calculateAdvancedAccounting();
+  };
+}
+
+// دالة زيادة المخزن يدوياً بكرتونة تانية
+function addStockManual(index) {
+  inventory[index].stock = (inventory[index].stock || 0) + 12;
+  localStorage.setItem("store_inventory", JSON.stringify(inventory));
+  renderTable();
+}
+
+// 3) دالة الكاشير الجديدة والمعدلة بالكامل لتفعيل "التعويم" و"خصم المخزن"
+if (typeof sellItem === 'function') {
+  sellItem = function() {
+    let modelIndex = document.getElementById("posModelSelect").value;
+    let qty = parseInt(document.getElementById("posQty").value);
+    let actualPrice = parseFloat(document.getElementById("posActualPrice").value);
+
+    if (modelIndex === "" || isNaN(qty) || qty <= 0 || isNaN(actualPrice) || actualPrice <= 0) {
+      alert("برجاء اختيار الموديل وتحديد كمية وسعر بيع صحيح.");
+      return;
+    }
+
+    let selectedItem = inventory[modelIndex];
+    
+    // التحقق من المخزن
+    if ((selectedItem.stock || 0) < qty) {
+      alert(`عذراً! المخزون غير كافي في المحل. المتاح الحالي: ${selectedItem.stock || 0} قطعة فقط.`);
+      return;
+    }
+
+    // الحسبة العائمة الذكية (سعر البيع الجديد اللي كتبه بإيده - تكلفة جملة القطعة الثابتة)
+    let totalInvoice = actualPrice * qty;
+    let individualProfit = actualPrice - selectedItem.pieceCost;
+    let totalProfit = individualProfit * qty;
+    let profitPercent = (individualProfit / actualPrice) * 100;
+
+    let now = new Date();
+    let timeStr = now.getHours() + ":" + String(now.getMinutes()).padStart(2, '0');
+
+    let saleRecord = {
+      time: timeStr,
+      name: selectedItem.name,
+      code: selectedItem.code,
+      qty: qty,
+      totalPrice: totalInvoice,
+      totalProfit: totalProfit,
+      extraInfo: `(نسبة ربح: ${profitPercent.toFixed(1)}%)`
+    };
+
+    // خصم المخزن الفعلي
+    inventory[modelIndex].stock -= qty;
+    localStorage.setItem("store_inventory", JSON.stringify(inventory));
+
+    // حفظ المبيعات
+    salesLog.unshift(saleRecord);
+    localStorage.setItem("store_sales_log", JSON.stringify(salesLog));
+    
+    document.getElementById("posQty").value = "1";
+    document.getElementById("posModelSelect").value = "";
+    document.getElementById("posActualPrice").value = "";
+
+    renderTable();
+    alert("💵 تم تسجيل الفاتورة بنجاح وتحديث درج الكاشير وخصم المخزن!");
+  };
+}
+
+// تعديل عرض سجل المبيعات ليعرض النسبة العائمة الحقيقية للقطعة
+if (typeof renderSales === 'function') {
+  let originalRenderSales = renderSales;
+  renderSales = function() {
+    let tableBody = document.getElementById("salesLogTable");
+    if(!tableBody) return;
+    
+    tableBody.innerHTML = "";
+    let totalCash = 0;
+    let actualProfit = 0;
+
+    salesLog.forEach(sale => {
+      totalCash += sale.totalPrice;
+      actualProfit += sale.totalProfit;
+
+      tableBody.innerHTML += `
+        <tr>
+          <td style="color: #64748b; font-size: 12px;">${sale.time}</td>
+          <td><b>[${sale.code}]</b> ${sale.name}</td>
+          <td>${sale.qty} قطعة</td>
+          <td style="color: #38bdf8; font-weight: bold;">${sale.totalPrice.toFixed(2)} ج.م</td>
+          <td><span class="badge-profit">+${sale.totalProfit.toFixed(2)} ج.م</span> <small style="font-size:10px; color:#94a3b8;">${sale.extraInfo || ''}</small></td>
+        </tr>
+      `;
+    });
+
+    document.getElementById("totalSalesCash").innerText = totalCash.toFixed(2) + " ج.م";
+    document.getElementById("actualProfitCash").innerText = actualProfit.toFixed(2) + " ج.م";
+  };
+}
+
+// 4) إدارة شاشة المصاريف والتكاليف الثابتة
+function addFixedCost() {
+  let title = document.getElementById("costTitle").value.trim();
+  let amount = parseFloat(document.getElementById("costAmount").value);
+
+  if (!title || isNaN(amount) || amount <= 0) {
+    alert("برجاء كتابة نوع المصروف وقيمته بشكل صحيح.");
+    return;
+  }
+
+  fixedCosts.push({ title, amount });
+  localStorage.setItem("store_fixed_costs", JSON.stringify(fixedCosts));
+  
+  document.getElementById("costTitle").value = "";
+  document.getElementById("costAmount").value = "";
+  
+  renderTable();
+}
+
+function deleteFixedCost(index) {
+  if (confirm("هل تريد حذف هذا المصروف؟")) {
+    fixedCosts.splice(index, 1);
+    localStorage.setItem("store_fixed_costs", JSON.stringify(fixedCosts));
+    renderTable();
+  }
+}
+
+// 5) المحرك المحاسبي المتقدم: دمج الكاشير مع المصاريف لإخراج الميزانية النهائية بالفتفوتة
+function calculateAdvancedAccounting() {
+  // رندر جدول المصاريف
+  let costsBody = document.getElementById("costsLogTable");
+  let totalCostsSum = 0;
+  if (costsBody) {
+    costsBody.innerHTML = "";
+    fixedCosts.forEach((cost, index) => {
+      totalCostsSum += cost.amount;
+      costsBody.innerHTML += `
+        <tr>
+          <td>${cost.title}</td>
+          <td style="color:#ef4444; font-weight:bold;">-${cost.amount.toFixed(2)} ج.م</td>
+          <td><button onclick="deleteFixedCost(${index})" class="btn-delete" style="padding:2px 6px;">حذف 🗑️</button></td>
+        </tr>
+      `;
+    });
+  }
+
+  // حساب كاشير إجمالي أرباح الدرج الفعلية الحالية
+  let totalSalesProfit = 0;
+  salesLog.forEach(sale => { totalSalesProfit += sale.totalProfit; });
+
+  // الحسبة الذهبية: صافي أرباح المحل في جيب العميل = أرباح المبيعات العائمة - التكاليف الثابتة
+  let finalNetProfit = totalSalesProfit - totalCostsSum;
+  
+  let netProfitDisplay = document.getElementById("netProfitCash");
+  if (netProfitDisplay) {
+    netProfitDisplay.innerText = finalNetProfit.toFixed(2) + " ج.م";
+    if (finalNetProfit < 0) {
+      netProfitDisplay.style.color = "#ef4444"; // خسران لو المصاريف أعلى
+    } else {
+      netProfitDisplay.style.color = "#10b981"; // كسبان وصافي فلوسه خضرا
+    }
+  }
+}
+</script>
+<!-- ======================================================= -->
