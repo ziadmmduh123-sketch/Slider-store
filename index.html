@@ -700,3 +700,15 @@ function exportToExcel() {
   XLSX.writeFile(wb, "تقرير_محاسبة_Slider_Store.xlsx");
 }
 </script>
+<script>
+window.addEventListener('DOMContentLoaded', (event) => {
+  // 1. تغيير عنوان الصفحة الرئيسي اللي فوق خالص
+  let mainTitle = document.querySelector("h2");
+  if(mainTitle) {
+    mainTitle.innerHTML = "👡 نظام محاسبة وجرد Slider Store الذكي";
+  }
+
+  // 2. تغيير عنوان التبويب في المتصفح فوق
+  document.title = "Slider Store - نظام المحاسبة الإحترافي";
+});
+</script>
