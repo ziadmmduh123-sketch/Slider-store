@@ -811,3 +811,138 @@ function importFromExcel(event) {
   reader.readAsArrayBuffer(file);
 }
 </script>
+<!-- ========================================== -->
+<!-- كود إضافي 6: نظام التعديل الذكي وكارت أعلى ربح -->
+<!-- ========================================== -->
+<style>
+.btn-edit {
+  background: #eab308; /* لون أصفر مميز للتعديل */
+  color: #0f172a;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 12px;
+  margin-left: 5px;
+  transition: background 0.2s;
+}
+.btn-edit:hover {
+  background: #ca8a04;
+}
+/* ستايل كارت أعلى ربح الجديد */
+.top-profit-card {
+  background: linear-gradient(135deg, #1e1b4b 0%, #311042 100%);
+  border: 1px solid #4c1d95;
+}
+</style>
+
+<script>
+// تمديد دالة renderTable لإضافة زرار التعديل وتحديث كارت أعلى ربح
+// سيتم تشغيل هذا الكود تلقائياً بعد بناء الجدول الأصلي
+const originalRenderTable = window.renderTable;
+
+window.renderTable = function() {
+  // تشغيل الدالة الأصلية أولاً عشان الجدول يتبني
+  if (typeof originalRenderTable === 'function') {
+    originalRenderTable();
+  }
+
+  // 1) إضافة زرار التعديل لكل صف في الجدول
+  let rows = document.querySelectorAll("#inventoryTableBody tr");
+  rows.forEach((row, index) => {
+    // التأكد إن الزرار مش مضاف قبل كده
+    if (!row.querySelector(".btn-edit") && inventory[index]) {
+      let actionsCell = row.cells[row.cells.length - 1]; // آخر خلية فيها زرار الحذف
+      
+      let editBtn = document.createElement("button");
+      editBtn.className = "btn-edit";
+      editBtn.innerHTML = "تعديل ✏️";
+      editBtn.onclick = function() {
+        openEditModal(index);
+      };
+      
+      // وضع زرار التعديل قبل زرار الحذف
+      actionsCell.insertBefore(editBtn, actionsCell.firstChild);
+    }
+  });
+
+  // 2) حساب وتحديث كارت "أعلى موديل ربحاً" في الـ Dashboard
+  updateTopProfitCard();
+};
+
+// دالة تحديث كارت أعلى ربح وإضافته للـ Dashboard لو مش موجود
+function updateTopProfitCard() {
+  let statsContainer = document.querySelector(".stats-container") || document.querySelector(".grid"); // تغيير حسب اسم الكلاس عندك فوق
+  if (!statsContainer) return;
+
+  // البحث عن أعلى منتج في هامش ربح القطعة
+  let topProduct = { name: "لا يوجد مبيعات", profit: 0 };
+  if (inventory && inventory.length > 0) {
+    let sorted = [...inventory].sort((a, b) => b.profit - a.profit);
+    topProduct = sorted[0];
+  }
+
+  let topCard = document.getElementById("topProfitCardID");
+  let cardHtml = `
+    <div class="card top-profit-card" id="topProfitCardID">
+      <h3>🔥 أعلى موديل ربحاً (القطعة)</h3>
+      <p style="font-size: 20px; color: #a78bfa; margin: 10px 0;">${topProduct.name || topProduct.code}</p>
+      <span style="color: #10b981; font-weight: bold;">+${parseFloat(topProduct.profit).toFixed(2)} ج مكسر صافي</span>
+    </div>
+  `;
+
+  if (!topCard) {
+    statsContainer.insertAdjacentHTML('beforeend', cardHtml);
+  } else {
+    topCard.outerHTML = cardHtml;
+  }
+}
+
+// دالة فتح صندوق التعديل وحساب المعادلات تلقائياً
+function openEditModal(index) {
+  let item = inventory[index];
+  if (!item) return;
+
+  let newName = prompt("تعديل اسم الموديل:", item.name);
+  if (newName === null) return; // إلغاء
+
+  let newCartonCost = prompt("تعديل سعر جملة الكرتونة الجديد:", item.cartonCost);
+  if (newCartonCost === null) return;
+
+  newCartonCost = parseFloat(newCartonCost);
+  if (isNaN(newCartonCost) || newCartonCost <= 0) {
+    alert("برجاء إدخال سعر صحيح!");
+    return;
+  }
+
+  // إعادة الحسابات تلقائياً بناءً على المعادلات المحاسبية المعتمدة لـ Slider Store
+  let pieceCost = newCartonCost / 12;
+  let sellPrice = pieceCost / (1 - 0.4); // هامش ربح 40% من سعر البيع
+  let profit = sellPrice - pieceCost;
+
+  // تحديث المصفوفة
+  inventory[index].name = newName;
+  inventory[index].cartonCost = newCartonCost;
+  inventory[index].pieceCost = pieceCost;
+  inventory[index].sellPrice = sellPrice;
+  inventory[index].profit = profit;
+
+  // حفظ في الـ LocalStorage وإعادة تحديث الشاشة
+  localStorage.setItem("store_inventory", JSON.stringify(inventory));
+  renderTable();
+  
+  // تحديث قائمة الكاشير عشان الأسعار الجديدة تظهر فوراً هناك
+  if (typeof renderCashierSelect === 'function') renderCashierSelect(); 
+  else if (typeof updateCashierDropdown === 'function') updateCashierDropdown();
+  else location.reload(); // حل احتياطي لتحديث القوائم المنسدلة
+
+  alert("✏️ تم تعديل الموديل وإعادة حساب الأرباح والأسعار بنجاح!");
+}
+
+// تشغيل التحديث الأول فور تحميل الصفحة
+window.addEventListener('DOMContentLoaded', () => {
+  setTimeout(renderTable, 500);
+});
+</script>
+<!-- ========================================== -->
