@@ -712,3 +712,102 @@ window.addEventListener('DOMContentLoaded', (event) => {
   document.title = "Slider Store - نظام المحاسبة الإحترافي";
 });
 </script>
+<style>
+.import-zone {
+  margin-top: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.file-input-wrapper {
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+}
+.btn-import {
+  background: #2563eb; /* لون أزرق احترافي */
+}
+.btn-import:hover {
+  background: #1d4ed8;
+}
+input[type=file] {
+  font-size: 100px;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+</style>
+
+<script>
+// إضافة واجهة الاستيراد داخل قسم النسخ الاحتياطي تلقائياً
+window.addEventListener('DOMContentLoaded', (event) => {
+  let backupSection = document.querySelector(".addon-section[style*='dashed']");
+  if(backupSection) {
+    let importHtml = `
+      <div class="import-zone">
+        <p style="font-size: 13px; color: #94a3b8; margin: 5px 0 0 0;">🔄 عندك جهاز جديد؟ ارفع ملف الـ Excel هنا عشان ترجع كل بضاعتك وحساباتك القديمة في ثانية:</p>
+        <div class="file-input-wrapper">
+          <button class="btn-import">رفع واسترجاع البيانات من ملف Excel ⬆️</button>
+          <input type="file" id="excelFileInput" accept=".xlsx, .xls" onchange="importFromExcel(event)">
+        </div>
+      </div>
+    `;
+    backupSection.insertAdjacentHTML('beforeend', importHtml);
+  }
+});
+
+function importFromExcel(event) {
+  let file = event.target.files[0];
+  if (!file) return;
+
+  let reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      let data = new Uint8Array(e.target.result);
+      let workbook = XLSX.read(data, {type: 'array'});
+      
+      // قراءة أول شيت في الملف
+      let firstSheetName = workbook.SheetNames[0];
+      let worksheet = workbook.Sheets[firstSheetName];
+      
+      // تحويل البيانات لـ JSON
+      let jsonData = XLSX.utils.sheet_to_json(worksheet);
+      
+      if(jsonData.length === 0) {
+        alert("الملف ده فاضي أو مش مظبوط!");
+        return;
+      }
+
+      // تحويل صيغة الإكسيل العربي لصيغة السيستم الداخلية
+      let importedInventory = jsonData.map(row => {
+        return {
+          code: row["كود الموديل"] || "#" + Math.floor(Math.random() * 1000),
+          name: row["اسم الموديل"] || "موديل مستورد",
+          type: row["نوع الموديل"] || "شبشب رجالي",
+          cartonCost: parseFloat(row["سعر جملة الكرتونة"]) || 0,
+          pieceCost: parseFloat(row["جملة القطعة الواحدة"]) || 0,
+          sellPrice: parseFloat(row["سعر البيع المقترح"]) || 0,
+          profit: parseFloat(row["هامش ربح القطعة"]) || 0
+        };
+      });
+
+      if(confirm(`تم قراءة ${importedInventory.length} موديل بنجاح. هل تريد دمجهم مع البيانات الحالية؟`)) {
+        // دمج البيانات المستوردة مع القديمة (أو استبدالها لو الشيت فاضي)
+        inventory = inventory.concat(importedInventory);
+        localStorage.setItem("store_inventory", JSON.stringify(inventory));
+        
+        // إعادة إنعاش الجدول وقائمة الكاشير
+        renderTable();
+        alert("🎯 مبروك! تم استرجاع كل البيانات والبضاعة بنجاح والسيستم جاهز لشغل الكاشير.");
+      }
+    } catch (error) {
+      alert("حصلت مشكلة وأنت ترفع الملف، اتأكد إنك بترفع نفس ملف الـ Excel اللي نزلته من السيستم.");
+      console.error(error);
+    }
+  };
+  
+  reader.readAsArrayBuffer(file);
+}
+</script>
